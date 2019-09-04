@@ -1,19 +1,19 @@
 
 # ## Case study 2: Intrinsic dimensions of ecosystem dynamics
 # ### As estimate based on PCAs
-# 
+#
 # #### Miguel D. Mahecha, Fabian Gans et al. (correspondence to: mmahecha@bgc-jena.mpg.de and fgans@bgc-jena.mpg.de)
-# 
+#
 # * Notebook to reproduce and understand examples in the paper *Earth system data cubes unravel global multivariate dynamics* (sub.).
-# 
+#
 # * The NB is written based on Julia 1.1
-# 
+#
 # * Normal text are explanations referring to notation and equations in the paper
-# 
+#
 # * `# comments in the code are itended explain specific aspects of the coding`
-# 
+#
 # * ### New steps in workflows are introduced with bold headers
-# 
+#
 # Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 
 # ### Load required packages
@@ -31,18 +31,18 @@ using Distributed
 # In this study we investigate the redundancy the different variables in each pixel. Therefore we calculate a linear dimensionality reduction (PCA) and check how many dimensions are needed to explain 90% of the variance of a cube that contained originally 6 variables.  First we check out the variables from the cube and add some processors, because we want to do a global study
 
 # ### Select and prepare (subset/gapfill) an Earth system data cube
-# 
+#
 # We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 cube_handle = Cube("/scratch/DataCube/v2.0.0/esdc-8d-0.25deg-1x720x1440-2.0.0.zarr/")
 #----------------------------------------------------------------------------
 
 # As we see here, we have a data cube of the form (compare Table 1 in the paper):
-# 
+#
 # \begin{equation}
 #     \mathcal{C}(\{lat, lon, time, var\})
 # \end{equation}
-# 
+#
 # There is a command that returns the metadata fro the variable axis for better orientation:
 
 cubeinfo(cube_handle)
@@ -55,23 +55,23 @@ println(getAxis("Var", cube_handle).values)
 # Having the variable names allows us to make a selection, such that we can subset the global cube. We should also take care that the variables are as complete as possible in the time window we analyze. This has been explored a priori.
 
 ## vector of variables we will work with
-vars = ["evaporative_stress", 
-    "latent_energy", 
-    "black_sky_albedo_avhrr", 
-    "fapar_tip", 
-    "root_moisture", 
-    "transpiration", 
-    "white_sky_albedo_avhrr", 
-    "sensible_heat", 
-    "bare_soil_evaporation", 
-    "net_radiation", 
-    "net_ecosystem_exchange", 
-    "evaporation", 
-    "terrestrial_ecosystem_respiration", 
-    "land_surface_temperature", 
-    "leaf_area_index", 
-    "white_sky_albedo", 
-    "gross_primary_productivity", 
+vars = ["evaporative_stress",
+    "latent_energy",
+    "black_sky_albedo_avhrr",
+    "fapar_tip",
+    "root_moisture",
+    "transpiration",
+    "white_sky_albedo_avhrr",
+    "sensible_heat",
+    "bare_soil_evaporation",
+    "net_radiation",
+    "net_ecosystem_exchange",
+    "evaporation",
+    "terrestrial_ecosystem_respiration",
+    "land_surface_temperature",
+    "leaf_area_index",
+    "white_sky_albedo",
+    "gross_primary_productivity",
     "black_sky_albedo"];
 
 ## time window where most of them are complete
@@ -94,29 +94,29 @@ cube_fill = gapFillMSC(cube_subset)
 
 ## Function LinInterp should be available on every core, i.e. @everywhere
 @everywhere begin
-    
+
     ## package on each core
     using Interpolations
-    
+
     function LinInterp(y)
-        try 
+        try
             ## find the values we need to input
             idx_nan = findall(ismissing, y)
             idx_ok  = findall(!ismissing, y)
-            
+
             ## make sure, we have all values as Float32
             y2 = Float32[y[i] for i in idx_ok]
-            
+
             ## generate an interpolation object based on the good data
             itp = interpolate((idx_ok,), y2, Gridded(Linear()))
-            
+
             ## fill the missing values based on a linter interpolation
             y[idx_nan] = itp(idx_nan)
             return y
         catch
             return y
         end
-    end     
+    end
 end
 
 ## short test
@@ -124,60 +124,60 @@ x = [2.5 missing 3.8 missing 8.9]
 LinInterp(x)
 #----------------------------------------------------------------------------
 
-# The function `LiInterp` can now be applied on each time series, so we would have a rather trival mapping of the form:  
-#     
+# The function `LiInterp` can now be applied on each time series, so we would have a rather trival mapping of the form:
+#
 # \begin{equation}
 #   f_{\{time\}}^{\{time}\} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, time, var\}).
 # \end{equation}
-# 
-# For operations of this kind, the best is to use the `mapslices` function. In the ESDL package, this function needs the input function, the cube handle, and an indication on which dimension we would apply it. The function can then infer that the output dimension here is also an axis of type `Time`:  
+#
+# For operations of this kind, the best is to use the `mapslices` function. In the ESDL package, this function needs the input function, the cube handle, and an indication on which dimension we would apply it. The function can then infer that the output dimension here is also an axis of type `Time`:
 
 cube_fill_itp = mapslices(LinInterp, cube_fill, dims = "Time")
 #----------------------------------------------------------------------------
 
 # As we describe in the paper, we estimate the intrinsic dimensions from the raw, yet gapfilled, data cube (`cube_fill_itp`), but also based on spectrally decomposed data. The decomposition via discrete FFTs is an atomic operation of the following form (Eq. 12),
-# 
+#
 # \begin{equation}
 #   f_{\{time\}}^{\{time, freq\}} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, time, var, freq\}).
 # \end{equation}
-# 
+#
 # which can be done using a pre-implemented ESDL function:
 
 cube_decomp = filterTSFFT(cube_fill_itp)
 #----------------------------------------------------------------------------
 
 # ### Estimate intrinic dimension via PCA
-# 
-# For estimating the intrinsic estimation via PCA from a multivariate time series we need essenntially two atomic functions. First, dimensionality reduction, 
-# 
+#
+# For estimating the intrinsic estimation via PCA from a multivariate time series we need essenntially two atomic functions. First, dimensionality reduction,
+#
 # \begin{equation}
 #      f_{\{time, var\}}^{\{time, princomp \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{time, princomp\})
 # \end{equation}
-# 
+#
 # And second estimating from the reduced space the number of dimensions that represent more variance than the threshold (for details see paper):
 # \begin{equation}
 #      f_{\{time, princomp\}}^{\{ \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{int dim\})
 # \end{equation}
-# 
+#
 # However, we as both steps emerge from the same analysis it is more efficient to wrap these two steps in a single atomic functions which has the structure:
 # \begin{equation}
 #      f_{\{time, var\}}^{\{ \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{\})
 # \end{equation}
-# 
+#
 # We can now apply this to the cube: The latter was the operation described in the paper (Eq. 11) as
-# 
+#
 # \begin{equation}
 #      f_{\{time, var\}}^{\{ \}} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon\})
 # \end{equation}
 
 ## Function sufficient_dimensions should be available on every core, i.e. @everywhere
 @everywhere begin
-    
+
     ## packages needed on each core
     using MultivariateStats, Statistics
-    
+
     function sufficient_dimensions(xin::AbstractArray, expl_var::Float64 = 0.95)
-        
+
         any(ismissing,xin) && return NaN
         npoint, nvar = size(xin)
         means = mean(xin, dims = 1)
@@ -186,10 +186,10 @@ cube_decomp = filterTSFFT(cube_fill_itp)
         pca = fit(PCA, xin', pratio = 0.999, method = :svd)
         return findfirst(cumsum(principalvars(pca)) / tprincipalvar(pca) .> expl_var)
     end
-end 
+end
 #----------------------------------------------------------------------------
 
-# We first apply the function `cube_decomp`to the standard data cube with the threshold of 95% of retained variance. as we see from the description of the atomic function above, we need as minimum input dimension `Time` and `Variable`. We call the output cube `cube_int_dim`, which efficiently is a map. 
+# We first apply the function `cube_decomp`to the standard data cube with the threshold of 95% of retained variance. as we see from the description of the atomic function above, we need as minimum input dimension `Time` and `Variable`. We call the output cube `cube_int_dim`, which efficiently is a map.
 
 cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Time","Variable"))
 #----------------------------------------------------------------------------
@@ -199,14 +199,14 @@ cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Ti
 saveCube(cube_int_dim, "/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/resu/IntDim")
 #----------------------------------------------------------------------------
 
-# Now we apply the same function 
-# 
+# Now we apply the same function
+#
 # \begin{equation}
 #     f_{\{time, var\}}^{\{ \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{\})
 # \end{equation}
-#  
+#
 # to the spectrally decomposed cube (Eq. 13):
-# 
+#
 # \begin{equation}
 #        f_{\{time, var\}}^{\{\}} : \mathcal{C}(\{lat, lon, time, var, freq\})\rightarrow \mathcal{C}(\{lat, lon, freq\})
 # \end{equation}
@@ -217,7 +217,7 @@ cube_int_dim_dec = mapslices(sufficient_dimensions, cube_decomp, 0.95, dims = ("
 saveCube(cube_int_dim_dec, "/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/resu/IntDimDec")
 #----------------------------------------------------------------------------
 
-# ### Visualizing results is not part of the ESDL package. 
+# ### Visualizing results is not part of the ESDL package.
 # Here we rely on PyPlot to use the neat `cartopy`pacakge
 
 ccrs = pyimport("cartopy.crs")
@@ -225,27 +225,27 @@ feat = pyimport("cartopy.feature")
 
 ## function to plot global map
 ## not generic - for this application only
-function plot_robin(titulo, DAT)   
+function plot_robin(titulo, DAT)
 
     ## make new figure
     fig = plt.figure(figsize=[10, 10])
-    
+
     ## set the projection
     ax = plt.subplot(1, 1, 1, projection=ccrs.Robinson())
 
     ## add title
     plt.title(titulo, fontsize=20)
-    
+
     ## land and ocean backgrounds
     ax.add_feature(feat.LAND,  color = [0.9, 0.9, 0.9])
     ax.add_feature(feat.OCEAN, color = [0.85, 0.85, 0.85])
     ax.coastlines(resolution = "50m", color = [0, 0, 0], lw = 0.5)
-   
+
     ## show data
     im = ax.imshow(reverse(DAT', dims = 1), transform = ccrs.PlateCarree(), cmap = cm, vmin = 1.5, vmax = 12.5)
 
     ## add colobar
-    clb = plt.colorbar(im, 
+    clb = plt.colorbar(im,
         pad = 0.05,
         shrink = 0.7,
         aspect = 30,
@@ -284,16 +284,16 @@ save_name = ["Original", "Long", "Annual", "Fast"]
 
 ## go through the four subplots
 for i in 1:4
-    
+
     ## array access to get the results out of the cube
     if i == 1
-        ## cube_int_dim has only dimensions lat, lon so 
+        ## cube_int_dim has only dimensions lat, lon so
         VAL = cube_int_dim[:, :]
     else
-        ## cube_int_dim_dec has dimensions lat, lon, freq so 
+        ## cube_int_dim_dec has dimensions lat, lon, freq so
         VAL = cube_int_dim_dec[i, :, :]
     end
-    
+
     ## missings -> NaN for PyPlot
     DAT = zeros(size(VAL))./0.0 ## matrix of NaN
     idx = findall(!ismissing, VAL) ## index if real vals
@@ -303,7 +303,7 @@ for i in 1:4
     fig = plot_robin(prelab[i]*scale_name[i], DAT)
 
     savefig("/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/figs/IntDim_" * save_name[i] * ".pdf",
-        orientation = "landscape", 
+        orientation = "landscape",
         bbox_inches = "tight")
 end
 #----------------------------------------------------------------------------
@@ -366,7 +366,7 @@ for i = 1:4
     end
 end
 
-xlabel("Intrinsic dimension", fontsize = 14) 
+xlabel("Intrinsic dimension", fontsize = 14)
 
 savefig("/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/figs/IntDim_Hist.pdf", bbox_inches = "tight")
 #----------------------------------------------------------------------------

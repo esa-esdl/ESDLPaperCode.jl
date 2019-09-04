@@ -1,2 +1,4 @@
 data
 notebooks/.ipynb_checkpoints
+docs/build
+tmp
