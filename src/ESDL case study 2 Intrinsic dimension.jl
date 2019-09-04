@@ -32,16 +32,16 @@ using Distributed
 
 # ### Select and prepare (subset/gapfill) an Earth system data cube
 #
-# We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
+# We need to choose a cube and here select a 8-dayly, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
-cube_handle = Cube("/scratch/DataCube/v2.0.0/esdc-8d-0.25deg-1x720x1440-2.0.0.zarr/")
+cube_handle = Cube("../data/subcube")
 #----------------------------------------------------------------------------
 
 # As we see here, we have a data cube of the form (compare Table 1 in the paper):
 #
-# \begin{equation}
+# ```math
 #     \mathcal{C}(\{lat, lon, time, var\})
-# \end{equation}
+# ```
 #
 # There is a command that returns the metadata fro the variable axis for better orientation:
 
@@ -75,16 +75,16 @@ vars = ["evaporative_stress",
     "black_sky_albedo"];
 
 ## time window where most of them are complete
-timevec = (Date("2003-01-01"), Date("2011-12-31"))
+timespan = Date("2003-01-01")..Date("2011-12-31")
 
 ## subset the grand cube and get the cube we will analyse here
-cube_subset = subsetcube(cube_handle, time = timevec, variable = vars)
+cube_subset = subsetcube(cube_handle, time = timespan, variable = vars)
 #----------------------------------------------------------------------------
 
 # An important preprocessing step is gapfilling. We do not want to enter the debate on the optimal gapfilling method. What we do here is gapfilling first with the mean seasonal cycle (where it can be estimated), and interpolating long-recurrent gaps (typically in winter seasons).
 
 ## gapfilling this requires a bit of CPU -> add some parallel processors:
-addprocs(20)
+addprocs(4)
 
 ## use the ESDL buit-in function
 cube_fill = gapFillMSC(cube_subset)
@@ -104,7 +104,7 @@ cube_fill = gapFillMSC(cube_subset)
             idx_nan = findall(ismissing, y)
             idx_ok  = findall(!ismissing, y)
 
-            ## make sure, we have all values as Float32
+            ## make sure to have a homogenous input array
             y2 = Float32[y[i] for i in idx_ok]
 
             ## generate an interpolation object based on the good data
@@ -120,7 +120,7 @@ cube_fill = gapFillMSC(cube_subset)
 end
 
 ## short test
-x = [2.5 missing 3.8 missing 8.9]
+x = [2.5,missing,3.8,missing,8.9]
 LinInterp(x)
 #----------------------------------------------------------------------------
 
@@ -143,7 +143,8 @@ cube_fill_itp = mapslices(LinInterp, cube_fill, dims = "Time")
 #
 # which can be done using a pre-implemented ESDL function:
 
-cube_decomp = filterTSFFT(cube_fill_itp)
+import Zarr
+cube_decomp = filterTSFFT(cube_fill_itp, compressor=Zarr.BloscCompressor(clevel=1))
 #----------------------------------------------------------------------------
 
 # ### Estimate intrinic dimension via PCA
@@ -196,7 +197,7 @@ cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Ti
 
 # Saving intermediate results can save CPU later, not needed to guarantee reproducability tough
 
-saveCube(cube_int_dim, "/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/resu/IntDim")
+saveCube(cube_int_dim, "../data/IntDim")
 #----------------------------------------------------------------------------
 
 # Now we apply the same function
@@ -214,18 +215,18 @@ saveCube(cube_int_dim, "/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/resu/IntDim"
 cube_int_dim_dec = mapslices(sufficient_dimensions, cube_decomp, 0.95, dims = ("Time","Variable"))
 #----------------------------------------------------------------------------
 
-saveCube(cube_int_dim_dec, "/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/resu/IntDimDec")
+saveCube(cube_int_dim_dec, "../data/IntDimDec")
 #----------------------------------------------------------------------------
 
 # ### Visualizing results is not part of the ESDL package.
 # Here we rely on PyPlot to use the neat `cartopy`pacakge
 
-ccrs = pyimport("cartopy.crs")
-feat = pyimport("cartopy.feature")
+ccrs = pyimport_conda("cartopy.crs","cartopy")
+feat = pyimport_conda("cartopy.feature","cartopy")
 
 ## function to plot global map
 ## not generic - for this application only
-function plot_robin(titulo, DAT)
+function plot_robin(titulo, DAT, clbtitle)
 
     ## make new figure
     fig = plt.figure(figsize=[10, 10])
@@ -254,7 +255,7 @@ function plot_robin(titulo, DAT)
         extend = "both",
         ticks = 2:12)
 
-    clb.ax.set_title("Intrinsic Dimension")
+    clb.ax.set_title(clbtitle)
     ##plt.show()
 
     return fig
@@ -300,9 +301,9 @@ for i in 1:4
     DAT[idx] = VAL[idx] ## only insert these
 
     name = prelab[i]*scale_name[i]
-    fig = plot_robin(prelab[i]*scale_name[i], DAT)
+    fig = plot_robin(prelab[i]*scale_name[i], DAT, "Intrinsic DImensions")
 
-    savefig("/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/figs/IntDim_" * save_name[i] * ".pdf",
+    savefig("../figures/IntDim_" * save_name[i] * ".pdf",
         orientation = "landscape",
         bbox_inches = "tight")
 end
@@ -368,5 +369,5 @@ end
 
 xlabel("Intrinsic dimension", fontsize = 14)
 
-savefig("/Net/Groups/BGI/scratch/mmahecha/ESDL_paper/figs/IntDim_Hist.pdf", bbox_inches = "tight")
+savefig("../figures/IntDim_Hist.pdf", bbox_inches = "tight")
 #----------------------------------------------------------------------------

@@ -17,8 +17,6 @@
 # Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 
 ## for plotting later on (need to be loaded first, to avoid conflicts)
-using Pkg
-Pkg.activate(joinpath(@__DIR__,".."))
 using PyCall, PyPlot, PlotUtils
 
 ## for operating the Earth system data lab
@@ -35,18 +33,18 @@ using Dates, Statistics, DataFrames, MultivariateStats
 #
 # We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
-cube_handle = Cube("/scratch/DataCube/v2.0.0/esdc-8d-0.25deg-1x720x1440-2.0.0.zarr/")
+cube_handle = Cube("../data/subcube")
 
 ## one cube for the tair respiration
-world_rec = getCubeData(c, variable = ["air_temperature_2m","terrestrial_ecosystem_respiration"],
+world_rec = subsetcube(cube_handle, variable = ["air_temperature_2m","terrestrial_ecosystem_respiration"],
     region = "Europe",
-    time = (Date("2000-01-01"), Date("2016-02-26")))
-world_gpp = getCubeData(c, variable = ["gross_primary_productivity"],
+    time = Date("2000-01-01")..Date("2016-02-26"))
+world_gpp = subsetcube(cube_handle, variable = ["gross_primary_productivity"],
     region = "Europe",
-    time = (Date("2000-01-01"), Date("2016-02-26")))
-world_h2o = getCubeData(c, variable = ["surface_moisture"],
+    time = Date("2000-01-01")..Date("2016-02-26"))
+world_h2o = subsetcube(cube_handle, variable = ["surface_moisture"],
     region = "Europe",
-    time = (Date("2000-01-01"), Date("2016-02-26")))
+    time = Date("2000-01-01")..Date("2016-02-26"))
 
 world_rec = gapFillMSC(world_rec)
 world_gpp = gapFillMSC(world_gpp)
@@ -139,23 +137,18 @@ end
 # ### Phase lag function to understand the relation with low freq Rb
 
 function phaselag(xout, xin)
-    NpY = 46
-    Ntot = 365
-    ##any(ismissing,xin) && return xout = [missing,missing,missing,missing]
-    try
-        data = xin
-        data = map(i->ismissing(i) ? NaN : i,data)
-        x  = data[:, 3] .+ 1.5 .* abs.(minimum(data[:, 3]))
-        y  = data[:, 1] .+ 1.5 .* abs.(minimum(data[:, 1]))
-        dx = [diff(x);x[1]-x[end]]
-        X  = hcat(x,dx)
-        (b, c, interc) = llsq(X, y)
-        yp = x .* b .+ c .* dx .+ interc
-        R2 = var(yp)/var(y)
-        xout .= [b,c,atan(-c * 2 * pi / NpY/b) * Ntot / (2*pi),R2]
-    catch
-        xout .= [missing,missing,missing,missing]
-    end
+  NpY = 46
+  Ntot = 365
+  data = xin
+  data = map(i->ismissing(i) ? NaN : i,data)
+  x  = data[:, 3] .+ 1.5 .* abs.(minimum(data[:, 3]))
+  y  = data[:, 1] .+ 1.5 .* abs.(minimum(data[:, 1]))
+  dx = [diff(x);x[1]-x[end]]
+  X  = hcat(x,dx)
+  (b, c, interc) = llsq(X, y)
+  yp = x .* b .+ c .* dx .+ interc
+  R2 = var(yp)/var(y)
+  xout .= [b,c,atan(-c * 2 * pi / NpY/b) * Ntot / (2*pi),R2]
 end
 #----------------------------------------------------------------------------
 
@@ -171,15 +164,11 @@ q10,rb  = mapCube(Q10decomposed,
              outdims = (outAxis1,outAxis2))
 #----------------------------------------------------------------------------
 
-saveCube(q10, "/Net/Groups/BGI/scratch/mmahecha/test/q10europe/")
-saveCube(rb, "/Net/Groups/BGI/scratch/mmahecha/test/rbeurope/")
+saveCube(q10, "../data/q10europe/")
+saveCube(rb, "../data/rbeurope/")
 #----------------------------------------------------------------------------
 
-q10 = loadCube("/Net/Groups/BGI/scratch/mmahecha/test/q10/")
-#----------------------------------------------------------------------------
-
-cd("/Net/Groups/BGI/scratch/mmahecha/tempcubes/")
-exportcube(q10, "q10b.nc")
+q10 = loadCube("../data/q10europe/")
 #----------------------------------------------------------------------------
 
 plotMAP(q10, var = "diffQ10")
@@ -298,12 +287,6 @@ lats = collect(q10.axes[3].values)
 
 
 using PyPlot, PyCall
-
-@pyimport mpl_toolkits.basemap as basemap
-@pyimport numpy as np
-@pyimport matplotlib.colors as mcolors
-@pyimport matplotlib.pyplot as plter
-
 
 ## Set up orthographic map projection with perspective of satellite looking down at 45N, 100W.
 ## Use low resolution coastlines.
