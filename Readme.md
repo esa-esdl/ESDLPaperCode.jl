@@ -9,7 +9,7 @@ To install run this code you need to install the unregistered dependencies first
 
 ````julia
 using Pkg
-Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDL.jl",rev="v0.7.5"))
+Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDL.jl",rev="v0.7.6"))
 ````
 
 After that you can run
