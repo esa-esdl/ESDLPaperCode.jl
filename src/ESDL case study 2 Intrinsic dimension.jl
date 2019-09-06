@@ -34,7 +34,6 @@ using Distributed
 #
 # We need to choose a cube and here select a 8-dayly, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 #----------------------------------------------------------------------------
 

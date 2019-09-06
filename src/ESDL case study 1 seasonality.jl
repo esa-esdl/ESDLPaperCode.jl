@@ -32,7 +32,6 @@ using Distributed
 
 # Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:
 
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 #----------------------------------------------------------------------------
 
