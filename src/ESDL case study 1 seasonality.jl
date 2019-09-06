@@ -32,6 +32,7 @@ using Distributed
 
 # Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:
 
+cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 #----------------------------------------------------------------------------
 
@@ -87,9 +88,6 @@ rmprocs(workers())
 # ### Visualization
 #
 # At this point we leave the `ESDL` and and go for visualizations. Using PyPlot we can generate fig. 3 of the paper, the data can be exatracted from the resutls cube via array-access `A[:, :]`.
-
-## FINAL TRY
-using PyPlot,  PlotUtils
 
 ## Create a plot and make it a polar plot
 function zonal_polar_plot(d_msc_lat, sbp, it, vari, lab)
@@ -256,6 +254,6 @@ for (sbp, lab, vari) in zip(sbps,labtoshow,getAxis(VariableAxis, caxes(cube_msc_
 end
 
 
-savefig("../figures/zonalmeans.png"),
+savefig("../figures/zonalmeans.png",
         bbox_inches = "tight");
 #----------------------------------------------------------------------------

@@ -24,7 +24,7 @@ Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 using PyCall, PyPlot, PlotUtils
 
 # for operating the Earth system data lab
-using ESDL, ESDLPlots
+using ESDL
 
 # other relevant packages
 using Statistics
@@ -35,6 +35,7 @@ using Statistics
 We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 ```@example ESDL case study 3 q10
+cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 

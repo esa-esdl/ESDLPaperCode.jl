@@ -26,7 +26,7 @@ Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 using PyCall, PyPlot, PlotUtils
 
 # for operating the Earth system data lab
-using ESDL, ESDLPlots
+using ESDL
 
 # for parallel computing
 using Distributed
@@ -35,6 +35,7 @@ using Distributed
 Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:
 
 ```@example ESDL case study 1 seasonality
+cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
@@ -102,9 +103,6 @@ as expected but in different order, which is, irrelevant as axes have no natural
 At this point we leave the `ESDL` and and go for visualizations. Using PyPlot we can generate fig. 3 of the paper, the data can be exatracted from the resutls cube via array-access `A[:, :]`.
 
 ```@example ESDL case study 1 seasonality
-# FINAL TRY
-using PyPlot,  PlotUtils
-
 # Create a plot and make it a polar plot
 function zonal_polar_plot(d_msc_lat, sbp, it, vari, lab)
 
@@ -270,7 +268,7 @@ for (sbp, lab, vari) in zip(sbps,labtoshow,getAxis(VariableAxis, caxes(cube_msc_
 end
 
 
-savefig("../figures/zonalmeans.png"),
+savefig("../figures/zonalmeans.png",
         bbox_inches = "tight");
 ```
 

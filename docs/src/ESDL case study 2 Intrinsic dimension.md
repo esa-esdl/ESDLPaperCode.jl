@@ -26,7 +26,7 @@ Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 using PyCall, PyPlot
 
 # for operating the Earth system data lab
-using ESDL, ESDLPlots
+using ESDL
 
 # for parallel computing
 using Distributed
@@ -39,6 +39,7 @@ In this study we investigate the redundancy the different variables in each pixe
 We need to choose a cube and here select a 8-dayly, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 ```@example ESDL case study 2 Intrinsic dimension
+cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
