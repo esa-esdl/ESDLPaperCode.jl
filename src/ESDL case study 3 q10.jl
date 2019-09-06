@@ -1,33 +1,33 @@
 
 # ## Case study 3: Model-parameter estimation in the ESDL
 # ### Example of the temperature sensitivity of ecosystem respiration
-# 
+#
 # #### Miguel D. Mahecha, Fabian Gans et al. (correspondence to: mmahecha@bgc-jena.mpg.de and fgans@bgc-jena.mpg.de)
-# 
+#
 # * Notebook to reproduce and understand examples in the paper *Earth system data cubes unravel global multivariate dynamics* (sub.).
-# 
+#
 # * The NB is written based on Julia 1.2
-# 
+#
 # * Normal text are explanations referring to notation and equations in the paper
-# 
+#
 # * `# comments in the code are intended explain specific aspects of the coding`
-# 
+#
 # * ### New steps in workflows are introduced with bold headers
-# 
+#
 # Sept 2019, Max Planck Institute for Biogeochemistry, Jena, Germany
 
 ## for plotting later on (need to be loaded first, to avoid conflicts)
 using PyCall, PyPlot, PlotUtils
 
 ## for operating the Earth system data lab
-using ESDL, ESDLPlots
+using ESDL
 
 ## other relevant packages
 using Statistics
 #----------------------------------------------------------------------------
 
 # ### Select and subet an Earth system data cube
-# 
+#
 # We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 cube_handle = Cube("../data/subcube")
@@ -39,9 +39,9 @@ world_tair = subsetcube(cube_handle, variable = "air_temperature_2m", time = 200
 world_resp = subsetcube(cube_handle, variable = "terrestrial_ecosystem_respiration", time = 2001:2012)
 #----------------------------------------------------------------------------
 
-# The objective is to estimate  $Q_{10}$ from the decomposed time series. For details we refere the reader to 
+# The objective is to estimate  $Q_{10}$ from the decomposed time series. For details we refere the reader to
 # Mahecha, M.D. et al. (2010) *Global convergence in the temperature sensitivity of respiration at ecosystem level.* Science, 329, 838-840.
-#         
+#
 # The first step is to transformation of both variables, so that the $Q_{10}$ model becomes linear and Tair the exponent:
 
 ## Element-wise transformations using `map` are done in a lazy manner, so the
@@ -54,7 +54,7 @@ world_new = concatenateCubes(τ=world_τ, ρ=world_ρ)
 #----------------------------------------------------------------------------
 
 # ### Function we need: moving average for decomposition
-# 
+#
 # First we need a function for time-series filtering. Using a moving average filter is the simplest way to decomposes a singal into fast and slow oscillations by caluclating a moving average over a window of points. This creates a smoothed curve (slow osc.) which can be subtracted from the original singlal to obtain fast oscillations separately. We could halve likewise used FFTs, SSA, EMD, or any other method for discrete time-series decomposition.
 
 ## Moving Average decomposes a singal into fast and slow oscillations
@@ -83,7 +83,7 @@ cube_decomp = mapCube(movingAverage, world_new, indims=indims, outdims=outdims)
 #----------------------------------------------------------------------------
 
 # ### For estimating the temperature sensitivities
-# 
+#
 # The classical $Q_{10}$ estimation could be realized with the following function
 
 function Q10direct(xout_Q10, xout_rb, xin)
@@ -130,8 +130,8 @@ end
 #----------------------------------------------------------------------------
 
 # ### Application of these functions on the prepared cubes
-# 
-# 
+#
+#
 
 indims_q10 = InDims("Time","Var")
 outdims_q10 = OutDims() ## Just a single number, the first output cube

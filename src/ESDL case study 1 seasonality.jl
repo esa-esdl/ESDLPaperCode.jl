@@ -22,7 +22,7 @@
 using PyCall, PyPlot, PlotUtils
 
 ## for operating the Earth system data lab
-using ESDL, ESDLPlots
+using ESDL
 
 ## for parallel computing
 using Distributed
