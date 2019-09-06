@@ -253,7 +253,7 @@ for (sbp, lab, vari) in zip(sbps,labtoshow,getAxis(VariableAxis, caxes(cube_msc_
 
 end
 
-
+mkpath("../figures")
 savefig("../figures/zonalmeans.png",
         bbox_inches = "tight");
 #----------------------------------------------------------------------------

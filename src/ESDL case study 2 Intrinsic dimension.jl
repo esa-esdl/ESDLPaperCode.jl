@@ -303,7 +303,7 @@ for i in 1:4
 
     name = prelab[i]*scale_name[i]
     fig = plot_robin(prelab[i]*scale_name[i], DAT, "Intrinsic DImensions")
-
+    mkpath("../figures")
     savefig("../figures/IntDim_" * save_name[i] * ".pdf",
         orientation = "landscape",
         bbox_inches = "tight")

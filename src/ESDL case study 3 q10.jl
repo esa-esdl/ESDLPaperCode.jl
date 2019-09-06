@@ -194,6 +194,7 @@ function plot_robin(titulo, DAT, clbtitle;
 end
 #----------------------------------------------------------------------------
 
+mkpath("../figures")
 p1 = plot_robin("a) Confounded Parameter Estimation", q10_direct[:,:], "Q10",dmin=1, dmax=2.5);
 savefig("../figures/q10_confounded.pdf",orientation="landscape",bbox_inches="tight")
 p2 = plot_robin("b) Scale Dependent Parameter Estimation", q10_scape[:,:], "Q10",dmin=1,dmax=2.5);
