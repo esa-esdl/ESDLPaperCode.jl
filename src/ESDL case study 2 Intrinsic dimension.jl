@@ -235,7 +235,7 @@ function plot_robin(titulo, DAT, clbtitle)
     ax = plt.subplot(1, 1, 1, projection=ccrs.Robinson())
 
     ## add title
-    plt.title(titulo, fontsize=20)
+    plt.title(titulo, fontsize=18)
 
     ## land and ocean backgrounds
     ax.add_feature(feat.LAND,  color = [0.9, 0.9, 0.9])
@@ -311,7 +311,7 @@ end
 
 fig  = figure("histplot", figsize = (10, 10))
 
-lableg = ["a) Original Data", "b) Long-term variability", "c) Seasonal variability", "c) Short-term variability"]
+lableg = ["a) Original Data", "b) Long-term variability", "c) Seasonal variability", "d) Short-term variability"]
 
 lat_ax_vals = getAxis(LatAxis, cube_int_dim.axes).values
 lon_ax_vals = getAxis(LonAxis, cube_int_dim.axes).values

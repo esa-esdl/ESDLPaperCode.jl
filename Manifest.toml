@@ -50,9 +50,9 @@ version = "1.0.0"
 
 [[AxisArrays]]
 deps = ["Dates", "IntervalSets", "IterTools", "RangeArrays"]
-git-tree-sha1 = "be6cf33b1484fcd0a9a7a3f6e3fd4a6b236941f0"
+git-tree-sha1 = "d63ba0315a1d287c9467e61e932578f2fdd048e0"
 uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
-version = "0.3.2"
+version = "0.3.3"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -379,6 +379,12 @@ version = "0.5.0"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[GLM]]
+deps = ["Distributions", "LinearAlgebra", "Printf", "Random", "Reexport", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "StatsModels"]
+git-tree-sha1 = "4ddc58560691feed10fe930ff92b71bbe6eef1fd"
+uuid = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+version = "1.3.1"
+
 [[GR]]
 deps = ["Base64", "DelimitedFiles", "LinearAlgebra", "Pkg", "Printf", "Random", "Serialization", "Sockets", "Test"]
 git-tree-sha1 = "b4c31b6377b6d51b6c69a3a9737d10c34d43974e"
@@ -526,12 +532,6 @@ git-tree-sha1 = "2ebe60d7343962966d1779a74a760f13217a6901"
 uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 version = "1.2.0"
 
-[[IterableTables]]
-deps = ["DataValues", "IteratorInterfaceExtensions", "Requires", "TableTraits", "TableTraitsUtils", "Test"]
-git-tree-sha1 = "18d6084924b2ac78deb65229cbcaa04d56ecb075"
-uuid = "1c8ee90f-4401-5389-894e-7a04a3dc0f4d"
-version = "0.11.0"
-
 [[IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -639,10 +639,9 @@ uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.0"
 
 [[Missings]]
-deps = ["SparseArrays", "Test"]
-git-tree-sha1 = "f0719736664b4358aa9ec173077d4285775f8007"
+git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.4.1"
+version = "0.4.2"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -847,10 +846,10 @@ uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 version = "0.7.0"
 
 [[RecursiveArrayTools]]
-deps = ["ArrayInterface", "RecipesBase", "Requires", "StaticArrays", "Statistics"]
-git-tree-sha1 = "ca98c030a187586521fb72d396e14482365ef77f"
+deps = ["RecipesBase", "Requires", "StaticArrays", "Statistics", "Test"]
+git-tree-sha1 = "c8f4e17fc7113ef7243450a8bba79981542175b6"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "1.0.2"
+version = "0.18.6"
 
 [[Reexport]]
 deps = ["Pkg"]
@@ -897,6 +896,12 @@ version = "0.5.0"
 [[SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+
+[[ShiftedArrays]]
+deps = ["OffsetArrays", "RecursiveArrayTools", "Test"]
+git-tree-sha1 = "b1aa84666a23a31cebcdcb848e62428968789287"
+uuid = "1277b4bf-5013-50f5-be3d-901d8477a67a"
+version = "0.5.0"
 
 [[Showoff]]
 deps = ["Dates"]
@@ -951,11 +956,17 @@ git-tree-sha1 = "b3a4e86aa13c732b8a8c0ba0c3d3264f55e6bb3e"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "0.8.0"
 
+[[StatsModels]]
+deps = ["CategoricalArrays", "DataStructures", "LinearAlgebra", "Missings", "ShiftedArrays", "SparseArrays", "StatsBase", "Tables"]
+git-tree-sha1 = "589c4f3914796a673ef63a8fdd4cf9fec09fe321"
+uuid = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
+version = "0.6.3"
+
 [[StatsPlots]]
-deps = ["Clustering", "DataStructures", "DataValues", "Distributions", "IterableTables", "KernelDensity", "Observables", "Plots", "RecipesBase", "Reexport", "StatsBase", "TableTraits", "TableTraitsUtils", "Test", "Widgets"]
-git-tree-sha1 = "d722a2d4293ded61124654aae6696c68d7946a95"
+deps = ["Clustering", "DataStructures", "DataValues", "Distributions", "Interpolations", "KernelDensity", "Observables", "Plots", "RecipesBase", "Reexport", "StatsBase", "Tables", "Widgets"]
+git-tree-sha1 = "9f3f096a310f25debaca9dbe6b4e0df7bb428fd0"
 uuid = "f3b207a7-027a-5e70-b257-86293d7955fd"
-version = "0.10.2"
+version = "0.12.0"
 
 [[SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -977,12 +988,6 @@ version = "0.3.0"
 deps = ["IteratorInterfaceExtensions"]
 git-tree-sha1 = "b1ad568ba658d8cbb3b892ed5380a6f3e781a81e"
 uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
-version = "1.0.0"
-
-[[TableTraitsUtils]]
-deps = ["DataValues", "IteratorInterfaceExtensions", "Missings", "TableTraits"]
-git-tree-sha1 = "fbc53f586630fa2a72190f7a792ba4106fd0776a"
-uuid = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
 version = "1.0.0"
 
 [[Tables]]
