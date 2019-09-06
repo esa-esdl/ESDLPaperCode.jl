@@ -8,7 +8,7 @@ const case_study_files = ["ESDL case study 1 seasonality.jl","ESDL case study 2 
 
 function run_case_study(i;redownload=false)
   isdir(joinpath(@__DIR__,"..","data","subcube")) || redownload || download_data()
-  include(case_study_files[i])
+  include(joinpath(@__DIR__,case_study_files[i]))
 end
 
 function run_all(;redownload=false)
