@@ -35,7 +35,6 @@ using Distributed
 Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:
 
 ```@example ESDL case study 1 seasonality
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
@@ -267,9 +266,10 @@ for (sbp, lab, vari) in zip(sbps,labtoshow,getAxis(VariableAxis, caxes(cube_msc_
 
 end
 
-
+mkpath("../figures")
 savefig("../figures/zonalmeans.png",
         bbox_inches = "tight");
+nothing #hide
 ```
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*

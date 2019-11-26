@@ -35,7 +35,6 @@ using Statistics
 We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 ```@example ESDL case study 3 q10
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
@@ -207,6 +206,7 @@ end
 ```
 
 ```@example ESDL case study 3 q10
+mkpath("../figures")
 p1 = plot_robin("a) Confounded Parameter Estimation", q10_direct[:,:], "Q10",dmin=1, dmax=2.5);
 savefig("../figures/q10_confounded.pdf",orientation="landscape",bbox_inches="tight")
 p2 = plot_robin("b) Scale Dependent Parameter Estimation", q10_scape[:,:], "Q10",dmin=1,dmax=2.5);
@@ -226,6 +226,7 @@ q10_diff = q10_direct - q10_scape
 ```@example ESDL case study 3 q10
 plot_robin("Correlation Tair and Rb",cor_tair_rb[:,:],"Coefficient",dmin=-1.0, dmax=1.0)
 plot_robin("Ratio of Q10conv and Q10Scape",q10_diff[:,:],"Ratio",dmin=-1.0,dmax=1.0);
+nothing #hide
 ```
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*

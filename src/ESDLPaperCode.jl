@@ -4,7 +4,10 @@ export run_case_study, run_all
 include("datadownload.jl")
 include("literate.jl")
 
-const case_study_files = ["ESDL case study 1 seasonality.jl","ESDL case study 2 Intrinsic dimension.jl","ESDL case study 3 q10.jl"]
+const case_study_files = ["ESDL case study 1 seasonality.jl",
+                          "ESDL case study 2 Intrinsic dimension.jl",
+                          "ESDL case study 3 q10.jl",
+                          "ESDL case study 4 Polygons.jl"]
 
 function run_case_study(i;redownload=false)
   isdir(joinpath(@__DIR__,"..","data","subcube")) || redownload || download_data()
