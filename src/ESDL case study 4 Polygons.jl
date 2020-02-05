@@ -19,9 +19,7 @@
 using ESDL, WeightedOnlineStats
 #----------------------------------------------------------------------------
 
-# ### Select and subet an Earth system data cube
-#
-# We need to choose a cube and here select a 8-dayily, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
+# ### Load the pre-downloaded Earth-System Datacube
 
 cube_handle = Cube("../data/subcube")
 #----------------------------------------------------------------------------
@@ -45,8 +43,6 @@ end
 # After this we can use the shapefile and apply a rasterization method to convert it to a cube. The `labelsym` argument specifies which field to transfer to the cubes metadata.
 
 srex = cubefromshape("../data/referenceRegions.shp",gpp,labelsym=:LAB)
-using ESDLPlots
-plotMAP(srex,im_only=true)
 #----------------------------------------------------------------------------
 
 # In order to compute some aggregate statistics over our datasets we join the 3 data cubes into a single iterable table. The data is not loaded but can be iterated over in an efficient manner which is chunk-aware. Additionally we need the latitude values of the Table to compute the weights of our aggregation which represent the grid cell size.
@@ -60,20 +56,29 @@ using DataFrames, Base.Iterators
 DataFrame(take(Iterators.filter(r->!any(ismissing,(r.gpp,r.moisture,r.region)),t),10))
 #----------------------------------------------------------------------------
 
-# Now comes the actual aggregation. First we generate an empty `WeightedHist` for every SREX region. Then we loop through all the entries in our table and fit the gpp/moisture pair into the respective histogram. In the end we create a new (in-memory) data cube from the resulting histograms.
+# Now comes the actual aggregation. First we generate an empty `WeightedHist` for every SREX region. Then we loop through all the entries in our table and fit the gpp/moisture pair into the respective histogram. Never will the whole cube be loaded into memory, but only one chunk is read at a time. In the end we create a new (in-memory) data cube from the resulting histograms.
 
 using ProgressMeter
 function aggregate_by_mask(t,labels)
-    hists = [WeightedHist((0.0:1:12,0:0.1:1)) for i=1:33]
+    n_classes = length(labels)
+    ## Here we create an empty 2d histogram for every SREX region
+
+    ####hists = [WeightedHist((0.0:1:12,0:0.1:1)) for i=1:n_labels]
+    hists = [WeightedHist((0.0:0.1:12,0:0.01:1)) for i=1:n_classes]
+
+    ## Now loop through every data point (in space and time)
     @showprogress for row in t
+        ## If all data are there
         if !any(ismissing,(row.gpp, row.moisture, row.region))
+            ####We select the appropriate histogram according to the region the data point belongs to
             h = hists[row.region[]]
+            ####And we fit the two data points to the histogram, weight by cos of lat
             fit!(h,(row.gpp,row.moisture),cosd(row.lat))
         end
     end
-    ##We create the axes for the new output data cube
-    midpointsgpp   = 0.5:1.0:11.5
-    midpointsmoist = 0.05:0.1:0.95
+    ########We create the axes for the new output data cube
+    midpointsgpp   = 0.05:0.1:11.95
+    midpointsmoist = 0.005:0.01:0.995
     newaxes = CubeAxis[
         CategoricalAxis("SREX",[labels[i] for i in 1:33]),
         RangeAxis("GPP",midpointsgpp),
@@ -86,11 +91,101 @@ end
 r = aggregate_by_mask(t,srex.properties["labels"])
 #----------------------------------------------------------------------------
 
-# And we create some heatmap plots:
+# To illustrate the output we plot the density for the region "Eastern Africa":
+
 import Plots
-for reg in ("AMZ","CEU","EAF")
+Plots.heatmap(0.005:0.01:0.995,0.05:0.1:11.95,r[srex="EAF"][:,:], clim=(0,5e-7), xlabel="Moisture", ylabel="GPP")
+#----------------------------------------------------------------------------
+
+saveCube(r, "../data/srex_aggregate.zarr", overwrite = true)
+#----------------------------------------------------------------------------
+
+
+#----------------------------------------------------------------------------
+
+# ## Python plotting
+#
+# To generate the publication-quality plots we use python plotting tools with the following code, which does not demonstrate any ESDL capabilities but is included here for reproducbility:
+
+## for plotting
+using PyCall, PyPlot, PlotUtils
+#----------------------------------------------------------------------------
+
+lat = getAxis("lat", srex).values
+lon = getAxis("lon", srex).values
+
+cm = ColorMap(get_cmap("gray", 33))
+ccrs = pyimport_conda("cartopy.crs","cartopy")
+feat = pyimport_conda("cartopy.feature","cartopy")
+
+######## make new figure
+fig = plt.figure(figsize=[10, 10])
+
+ax = subplot(313, )
+
+
+######## set the projection
+ax = plt.subplot(projection=ccrs.Robinson())
+
+######## add title
+plt.title("IPCC AR5 regions", fontsize=20)
+
+######## land and ocean backgrounds
+ax.add_feature(feat.LAND,  color = [0.9, 0.9, 0.9])
+ax.add_feature(feat.OCEAN, color = [0.85, 0.85, 0.85])
+ax.coastlines(resolution = "50m", color = [0, 0, 0], lw = 0.5)
+
+######## show data
+DAT = srex[:, :]
+DAT = replace(DAT, missing=>NaN)
+DAT2 = reverse(DAT', dims = 1)
+
+im = ax.imshow(DAT2, transform = ccrs.PlateCarree(), cmap = cm, vmin = 0, vmax = 30)
+
+for i in 1:33
+    if  !(srex.properties["labels"][i] in ["NTP*", "ETP*", "STP*"])
+        idx_lat = mean(lat[j.I[2]] for j in CartesianIndices(DAT) if DAT[j]==i)
+        idx_lon = mean(lon[j.I[1]] for j in CartesianIndices(DAT) if DAT[j]==i)
+        ax.text(idx_lon, idx_lat, weight="bold", color = "red", srex.properties["labels"][i], horizontalalignment = "center", verticalalignment = "center", transform=ccrs.Geodetic())
+    end
+end
+
+####savefig("SREX.pdf", bbox_inches = "tight")
+savefig("../figures/SREX.png", bbox_inches = "tight")
+#----------------------------------------------------------------------------
+
+# And we create some heatmap plots:
+
+gpp = collect(getAxis("GPP", r).values)
+moi = collect(getAxis("Moisture", r).values);
+#----------------------------------------------------------------------------
+
+## Draw a heatmap with the numeric values in each cell
+####f, ax = plt.subplots(figsize=(9, 6))
+sns = pyimport_conda("seaborn","seaborn")
+sns.set(style="dark")
+
+plt.ioff()
+
+for i in 1:33
+    reg = srex.properties["labels"][i]
+    figure(figsize = (5, 5))
     data = r[srex=reg][:,:]
-    p = Plots.heatmap(0.5:1.0:11.5,0.05:0.1:0.95,(data')./maximum(data), lw = 0, xlab = "gross primary productivity", ylab="surface moisture", title=reg)
-    Plots.savefig(p,"../figures/heatmap_$reg.png")
+    data = log10.(replace((data')./maximum(data),0.0=>NaN))
+
+    data = transpose(data)
+
+    ax = sns.heatmap(data,  cmap = sns.cm.rocket_r, vmin = -5.5, vmax=0)
+    ax.set_yticks(1:10:120)
+    ax.set_yticklabels(round.(gpp[1:10:120]; digits = 0))
+
+    ax.set_xticks(1:10:100)
+    ax.set_xticklabels(round.(moi[1:10:100]; digits = 1))
+    ##ax.set_xlabel("Surface Moisture []")
+    ##ax.set_ylabel("Gross Primary Production [g C m⁻² d⁻¹]")
+    ####ax.set_yticks(y_axis)
+    ax.invert_yaxis()
+    ax.set_title(reg, fontsize=20)
+    savefig("../figures/" * reg * ".png", bbox_inches = "tight")
 end
 #----------------------------------------------------------------------------

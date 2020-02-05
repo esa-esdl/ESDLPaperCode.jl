@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "@__REPO_ROOT_URL__/"
+EditURL = "<unknown>/../src/ESDL case study 3 q10.jl"
 ```
 
 ## Case study 3: Model-parameter estimation in the ESDL
@@ -228,6 +228,8 @@ plot_robin("Correlation Tair and Rb",cor_tair_rb[:,:],"Coefficient",dmin=-1.0, d
 plot_robin("Ratio of Q10conv and Q10Scape",q10_diff[:,:],"Ratio",dmin=-1.0,dmax=1.0);
 nothing #hide
 ```
+
+---
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
 
