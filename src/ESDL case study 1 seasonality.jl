@@ -24,8 +24,6 @@ using PyCall, PyPlot, PlotUtils
 ## for operating the Earth system data lab
 using ESDL
 
-## for parallel computing
-using Distributed
 #----------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------
@@ -54,8 +52,6 @@ vars = ["gross_primary_productivity", "air_temperature_2m", "surface_moisture"]
 cube_subset = subsetcube(cube_handle, variable = vars)
 #----------------------------------------------------------------------------
 
-## The next step requires a bit of CPU -> add some parallel processors:
-addprocs(4)
 
 # The next function estimates the median seasonal cycle. This changes the dimension of the cube, as the time domain is replaced by day of year (doy); Eq. 9 in the manuscript:
 # ```math
@@ -71,15 +67,11 @@ cube_msc = getMedSC(cube_subset)
 #     f_{\{lon\}}^{\{\}} : \mathcal{C}(\{lat, lon, doy, var\}) \rightarrow \mathcal{C}(\{lat, doy, var\})
 # ```
 
-## The median function; the @everywhere brings the contents to each core
-@everywhere import Statistics.median
+import Statistics.median
 
 ## Applied to the dimension "Lon"
 cube_msc_lat = mapslices(median ∘ skipmissing, cube_msc, dims = "Lon")
 #----------------------------------------------------------------------------
-
-## Now the hard work is done and we can remove the workers
-rmprocs(workers())
 
 # The result of each operation on a data cube is a data cube. Here the resulting cube has the form $\mathcal{C}(\{doy, lat, var\})$
 # as expected but in different order, which is, irrelevant as axes have no natural order.
