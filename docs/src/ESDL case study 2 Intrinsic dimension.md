@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "@__REPO_ROOT_URL__/"
+EditURL = "<unknown>/src/ESDL case study 2 Intrinsic dimension.jl"
 ```
 
 ## Case study 2: Intrinsic dimensions of ecosystem dynamics
@@ -27,9 +27,8 @@ using PyCall, PyPlot
 
 # for operating the Earth system data lab
 using ESDL
-
-# for parallel computing
-using Distributed
+import Blosc
+Blosc.set_num_threads(Threads.nthreads())
 ```
 
 In this study we investigate the redundancy the different variables in each pixel. Therefore we calculate a linear dimensionality reduction (PCA) and check how many dimensions are needed to explain 90% of the variance of a cube that contained originally 6 variables.  First we check out the variables from the cube and add some processors, because we want to do a global study
@@ -39,7 +38,6 @@ In this study we investigate the redundancy the different variables in each pixe
 We need to choose a cube and here select a 8-dayly, 0.25° resolution global cube. The cube name suggests it is chunked such that we have one time chunk and 720x1440 spatial chunks
 
 ```@example ESDL case study 2 Intrinsic dimension
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
@@ -87,51 +85,47 @@ vars = ["evaporative_stress",
 timespan = Date("2003-01-01")..Date("2011-12-31")
 
 # subset the grand cube and get the cube we will analyse here
-cube_subset = subsetcube(cube_handle, time = timespan, variable = vars)
+cube_subset = subsetcube(cube_handle, time = timespan, variable = vars, region="Europe")
 ```
 
 An important preprocessing step is gapfilling. We do not want to enter the debate on the optimal gapfilling method. What we do here is gapfilling first with the mean seasonal cycle (where it can be estimated), and interpolating long-recurrent gaps (typically in winter seasons).
 
 ```@example ESDL case study 2 Intrinsic dimension
-# gapfilling this requires a bit of CPU -> add some parallel processors:
-addprocs(4)
-
 # use the ESDL buit-in function
 cube_fill = gapFillMSC(cube_subset)
 ```
 
-The interpolation of wintergpas needs a function that we code here an call `LinInterp`.
+The interpolation of wintergaps needs a function that we code here an call `LinInterp`.
 
 ```@example ESDL case study 2 Intrinsic dimension
-# Function LinInterp should be available on every core, i.e. @everywhere
-@everywhere begin
+using Interpolations
 
-    # package on each core
-    using Interpolations
+function LinInterp(y)
 
-    function LinInterp(y)
-        try
-            # find the values we need to input
-            idx_nan = findall(ismissing, y)
-            idx_ok  = findall(!ismissing, y)
+  try
+    # find the values we need to input
+    idx_nan = findall(ismissing, y)
+    idx_ok  = findall(!ismissing, y)
 
-            # make sure to have a homogenous input array
-            y2 = Float32[y[i] for i in idx_ok]
+    # make sure to have a homogenous input array
+    y2 = Float64[y[i] for i in idx_ok]
 
-            # generate an interpolation object based on the good data
-            itp = interpolate((idx_ok,), y2, Gridded(Linear()))
+    # generate an interpolation object based on the good data
+    itp = extrapolate(interpolate((idx_ok,), y2, Gridded(Linear())),Flat())
 
-            # fill the missing values based on a linter interpolation
-            y[idx_nan] = itp(idx_nan)
-            return y
-        catch
-            return y
-        end
-    end
+    # fill the missing values based on a linter interpolation
+    y[idx_nan] = itp(idx_nan)
+    return y
+  catch
+    idx_nan = findall(ismissing, y)
+    y[idx_nan] .= mean(skipmissing(y))
+    return y
+  end
 end
 
+
 # short test
-x = [2.5,missing,3.8,missing,8.9]
+x = [2.5,missing,3.8,missing,8.9,missing]
 LinInterp(x)
 ```
 
@@ -153,11 +147,13 @@ As we describe in the paper, we estimate the intrinsic dimensions from the raw, 
   f_{\{time\}}^{\{time, freq\}} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, time, var, freq\}).
 \end{equation}
 
-which can be done using a pre-implemented ESDL function:
+which can be done using a pre-implemented ESDL function. Note that this step
+will use a lot of computing time.
 
 ```@example ESDL case study 2 Intrinsic dimension
 import Zarr
-cube_decomp = filterTSFFT(cube_fill_itp, compressor=Zarr.BloscCompressor(clevel=1))
+ESDL.ESDLDefaults.compressor[] = Zarr.BloscCompressor(clevel=1)
+cube_decomp = filterTSFFT(cube_fill_itp)
 ```
 
 ### Estimate intrinic dimension via PCA
@@ -185,22 +181,18 @@ We can now apply this to the cube: The latter was the operation described in the
 \end{equation}
 
 ```@example ESDL case study 2 Intrinsic dimension
-# Function sufficient_dimensions should be available on every core, i.e. @everywhere
-@everywhere begin
+# packages needed on each core
+using MultivariateStats, Statistics
 
-    # packages needed on each core
-    using MultivariateStats, Statistics
+function sufficient_dimensions(xin::AbstractArray, expl_var::Float64 = 0.95)
 
-    function sufficient_dimensions(xin::AbstractArray, expl_var::Float64 = 0.95)
-
-        any(ismissing,xin) && return NaN
-        npoint, nvar = size(xin)
-        means = mean(xin, dims = 1)
-        stds  = std(xin,  dims = 1)
-        xin   = broadcast((y,m,s) -> s>0.0 ? (y-m)/s : one(y), xin, means, stds)
-        pca = fit(PCA, xin', pratio = 0.999, method = :svd)
-        return findfirst(cumsum(principalvars(pca)) / tprincipalvar(pca) .> expl_var)
-    end
+  any(ismissing,xin) && return NaN
+  npoint, nvar = size(xin)
+  means = mean(xin, dims = 1)
+  stds  = std(xin,  dims = 1)
+  xin   = broadcast((y,m,s) -> s>0.0 ? (y-m)/s : one(y), xin, means, stds)
+  pca = fit(PCA, xin', pratio = 0.999, method = :svd)
+  return findfirst(cumsum(principalvars(pca)) / tprincipalvar(pca) .> expl_var)
 end
 ```
 
@@ -213,7 +205,7 @@ cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Ti
 Saving intermediate results can save CPU later, not needed to guarantee reproducability tough
 
 ```@example ESDL case study 2 Intrinsic dimension
-saveCube(cube_int_dim, "../data/IntDim")
+saveCube(cube_int_dim, "../data/IntDim", overwrite=true)
 ```
 
 Now we apply the same function
@@ -233,7 +225,7 @@ cube_int_dim_dec = mapslices(sufficient_dimensions, cube_decomp, 0.95, dims = ("
 ```
 
 ```@example ESDL case study 2 Intrinsic dimension
-saveCube(cube_int_dim_dec, "../data/IntDimDec")
+saveCube(cube_int_dim_dec, "../data/IntDimDec", overwrite=true)
 ```
 
 ### Visualizing results is not part of the ESDL package.
@@ -325,7 +317,7 @@ for i in 1:4
 
     name = prelab[i]*scale_name[i]
     fig = plot_robin(prelab[i]*scale_name[i], DAT, "Intrinsic DImensions")
-
+    mkpath("../figures")
     savefig("../figures/IntDim_" * save_name[i] * ".pdf",
         orientation = "landscape",
         bbox_inches = "tight")
@@ -395,6 +387,8 @@ xlabel("Intrinsic dimension", fontsize = 14)
 
 savefig("../figures/IntDim_Hist.pdf", bbox_inches = "tight")
 ```
+
+---
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
 

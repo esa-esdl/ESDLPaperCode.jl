@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "@__REPO_ROOT_URL__/"
+EditURL = "<unknown>/src/ESDL case study 1 seasonality.jl"
 ```
 
 ## Case study 1: Seasonal dynamics on the land surface
@@ -27,15 +27,11 @@ using PyCall, PyPlot, PlotUtils
 
 # for operating the Earth system data lab
 using ESDL
-
-# for parallel computing
-using Distributed
 ```
 
 Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:
 
 ```@example ESDL case study 1 seasonality
-cd(@__DIR__)
 cube_handle = Cube("../data/subcube")
 ```
 
@@ -62,11 +58,6 @@ So we "virtually get" the cube data virually:
 cube_subset = subsetcube(cube_handle, variable = vars)
 ```
 
-```@example ESDL case study 1 seasonality
-# The next step requires a bit of CPU -> add some parallel processors:
-addprocs(4)
-```
-
 The next function estimates the median seasonal cycle. This changes the dimension of the cube, as the time domain is replaced by day of year (doy); Eq. 9 in the manuscript:
 ```math
     f_{\{time\}}^{\{doy\}} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, doy, var\})
@@ -83,16 +74,10 @@ The resulting cube `cube_msc` has is of the form $\mathcal{C}(\{lat, lon, doy, v
 ```
 
 ```@example ESDL case study 1 seasonality
-# The median function; the @everywhere brings the contents to each core
-@everywhere import Statistics.median
+import Statistics.median
 
 # Applied to the dimension "Lon"
 cube_msc_lat = mapslices(median ∘ skipmissing, cube_msc, dims = "Lon")
-```
-
-```@example ESDL case study 1 seasonality
-# Now the hard work is done and we can remove the workers
-rmprocs(workers())
 ```
 
 The result of each operation on a data cube is a data cube. Here the resulting cube has the form $\mathcal{C}(\{doy, lat, var\})$
@@ -267,10 +252,13 @@ for (sbp, lab, vari) in zip(sbps,labtoshow,getAxis(VariableAxis, caxes(cube_msc_
 
 end
 
-
+mkpath("../figures")
 savefig("../figures/zonalmeans.png",
         bbox_inches = "tight");
+nothing #hide
 ```
+
+---
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
 

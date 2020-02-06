@@ -4,8 +4,11 @@ This repository is a collection of case studies around the ESDL as described in 
 
 ```@contents
 Pages = [
-  "ESDL case study 1 seasonality.md",
-]
+  #"ESDL case study 1 seasonality.md",
+  #"ESDL case study 2 Intrinsic dimension.md",
+  #"ESDL case study 3 q10.md",
+  #"ESDL case study 4 Polygons.md",
+  ]
 Depth = 1
 ```
 
