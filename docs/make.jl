@@ -5,7 +5,7 @@ makedocs(
   sitename = "ESDLPaperCode.jl",
   authors = "Miguel Mahecha, Fabian Gans",
   pages = [
-    #"Home" => "index.md",
+    "Home" => "index.md",
     "Case studies" => [
       "Seasonality" => "ESDL case study 1 seasonality.md",
       "Intrinsic Dimensions" => "ESDL case study 2 Intrinsic dimension.md",
