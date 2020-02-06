@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/../src/ESDL case study 3 q10.jl"
+EditURL = "<unknown>/src/ESDL case study 3 q10.jl"
 ```
 
 ## Case study 3: Model-parameter estimation in the ESDL

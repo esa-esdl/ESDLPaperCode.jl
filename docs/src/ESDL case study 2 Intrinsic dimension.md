@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/../src/ESDL case study 2 Intrinsic dimension.jl"
+EditURL = "<unknown>/src/ESDL case study 2 Intrinsic dimension.jl"
 ```
 
 ## Case study 2: Intrinsic dimensions of ecosystem dynamics

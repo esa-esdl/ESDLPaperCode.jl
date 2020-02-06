@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/../src/ESDL case study 1 seasonality.jl"
+EditURL = "<unknown>/src/ESDL case study 1 seasonality.jl"
 ```
 
 ## Case study 1: Seasonal dynamics on the land surface
