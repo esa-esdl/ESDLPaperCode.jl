@@ -179,7 +179,8 @@ nothing #hide
 # Draw a heatmap with the numeric values in each cell
 ####f, ax = plt.subplots(figsize=(9, 6))
 sns = pyimport_conda("seaborn","seaborn")
-sns.set(style="dark")
+sns.set_style("white")
+sns.axes_style("darkgrid")
 
 plt.ioff()
 
@@ -187,22 +188,21 @@ for i in 1:33
     reg = srex.properties["labels"][i]
     figure(figsize = (5, 5))
     data = r[srex=reg][:,:]
-    data = log10.(replace((data')./maximum(data),0.0=>NaN))
+    data = sqrt.(replace((data')./maximum(data),0.0=>NaN))
 
     data = transpose(data)
 
-    ax = sns.heatmap(data,  cmap = sns.cm.rocket_r, vmin = -5.5, vmax=0)
+    ax = sns.heatmap(data,  cmap = sns.cm.rocket_r)#, vmin = 0.1, vmax=1)
     ax.set_yticks(1:10:120)
     ax.set_yticklabels(round.(gpp[1:10:120]; digits = 0))
 
     ax.set_xticks(1:10:100)
     ax.set_xticklabels(round.(moi[1:10:100]; digits = 1))
-    ##ax.set_xlabel("Surface Moisture []")
-    ##ax.set_ylabel("Gross Primary Production [g C m⁻² d⁻¹]")
-    ####ax.set_yticks(y_axis)
+    #ax.set_xlabel("Surface Moisture []")
+    #ax.set_ylabel("Gross Primary Production [g C m⁻² d⁻¹]")
     ax.invert_yaxis()
-    ax.set_title(reg, fontsize=20)
-    savefig("../figures/" * reg * ".png", bbox_inches = "tight")
+    ax.set_title(reg, fontsize = 20)
+    savefig("normal" * reg * ".png", bbox_inches = "tight")
 end
 ```
 
