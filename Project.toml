@@ -3,6 +3,7 @@ uuid = "2502ad13-e485-5df4-bc88-d00dc12670bb"
 
 [deps]
 AWSCore = "4f1ea46c-232b-54a6-9b17-cc2d0f3e6598"
+Blosc = "a74b3585-a348-5f62-a45c-50e91977d574"
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
