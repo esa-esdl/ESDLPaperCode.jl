@@ -1,4 +1,4 @@
-# Case studies from the ESDL Paper (Mahecha et. al)
+# Case studies from the ESDL Paper (Mahecha, Gans et. al)
 
 This repository contains the scripts to reproduce all results and figures from the case studies
 in the ESDL overview paper (citation to follow).
@@ -9,7 +9,7 @@ To install run this code you need to install the unregistered dependencies first
 
 ````julia
 using Pkg
-Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDL.jl",rev="v0.7.6"))
+Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDL.jl",rev="ESDL_Paper"))
 ````
 
 After that you can run
