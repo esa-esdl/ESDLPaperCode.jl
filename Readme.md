@@ -1,10 +1,11 @@
 [![DOI](https://zenodo.org/badge/206770757.svg)](https://zenodo.org/badge/latestdoi/206770757)
 
 
-# Example code used to produce the results and figures in Mahecha, Gans, et al. (2020) "Earth system data cubes unravel global multivariate dynamics" Earth System Dynamics.
+# Earth system data cubes unravel global multivariate dynamics" 
 
-This repository contains the scripts to reproduce all results and figures from the case studies
-in the ESDL overview paper (citation to follow).
+Example code used to produce the results and figures in Mahecha, Gans, 
+et al. (2020) "Earth system data cubes unravel global multivariate 
+dynamics" Earth System Dynamics.
 
 ## Installation
 
