@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/206770757.svg)](https://zenodo.org/badge/latestdoi/206770757)
+
+
 # Case studies from the ESDL Paper (Mahecha, Gans et. al)
 
 This repository contains the scripts to reproduce all results and figures from the case studies
